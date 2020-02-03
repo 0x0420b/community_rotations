@@ -16,7 +16,9 @@ local SPELL_HEALING_ELIXIR = Spell(122281, 100)
 local SPELL_THUNDER_FOCUS_TEA = Spell(116680, 100)
 local SPELL_REVIVAL = Spell(115310, 100)
 local SPELL_INVOKE_CHIJI = Spell(198664)
+local SPELL_BLOOD_FURY = Spell(33697)
 
+local AURA_FOOD = 167152
 local AURA_RENEWING_MIST = 119611
 local AURA_ENVELOPING_MIST = 124682
 local AURA_SOOTHING_MIST_STATUE = 198533
@@ -58,7 +60,7 @@ function Mistweaver.DoCombat(player, target)
     -- DEBUG PART
     local sprop = player:GetCurrentSpell()
     if player:IsDead() or sprop and sprop == 191837 or -- LETS NOT CANCEL ESSENCE FONT
-    player:IsMounted() or player:IsCasting() or player:HasTerrainSpellActive() then
+    player:IsMounted() or player:IsCasting() or player:HasTerrainSpellActive() or player:HasAura(AURA_FOOD) then
         return
     end
 
@@ -118,6 +120,10 @@ function Mistweaver.DoCombat(player, target)
         return
     end
 
+    if HealthLevel < 65 and SPELL_BLOOD_FURY:CanCast() then
+        SPELL_BLOOD_FURY:Cast(player)
+        return
+    end
 
     if Settings.FortifyingBrew == 2 and player:InCombat() and
         player:GetHealthPercent() < Settings.FortifyingBrewPercent and
