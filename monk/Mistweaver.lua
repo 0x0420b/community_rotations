@@ -68,6 +68,7 @@ function Mistweaver.DoCombat(player, target)
     local HealthLevel = 0
     local multiHeal = MultiLow(player)
     local dispellCheck
+    local renewTarget = getRenewTarget(player)
 
     if not toHeal then toHeal = player end
 
@@ -107,12 +108,12 @@ function Mistweaver.DoCombat(player, target)
         return
     end
 
-    if multiHeal > Settings.EssenceCount and SPELL_ESSENCE_FONT:CanCast() and toHeal:GetHealthPercent() > 40 then
+    if multiHeal > Settings.EssenceCount and SPELL_ESSENCE_FONT:CanCast() and HealthLevel > 60 then
         SPELL_ESSENCE_FONT:Cast(player)
         return
     end
 
-    if dispellCheck and SPELL_DETOX:CanCast(dispellCheck) then
+    if dispellCheck and SPELL_DETOX:CanCast(dispellCheck) and HealthLevel > 80 then
         SPELL_DETOX:Cast(dispellCheck)
         return
     end
@@ -138,7 +139,12 @@ function Mistweaver.DoCombat(player, target)
         return
     end
 
-    if HealthLevel < Settings.SoothingPercent and
+    if renewTarget and (HealthLevel > 80 or player:IsMoving()) and SPELL_RENEWING_MIST:CanCast(renewTarget) and not renewTarget:HasAuraByPlayer(AURA_RENEWING_MIST) then
+        SPELL_RENEWING_MIST:Cast(renewTarget)
+        return
+    end
+
+    if HealthLevel < 100 and
         not toHeal:HasAuraByPlayer(AURA_SOOTHING_MIST_CHANNEL) and
         SPELL_SOOTHING_MIST:CanCast(toHeal) then
         SPELL_SOOTHING_MIST:Cast(toHeal)
@@ -159,6 +165,11 @@ function Mistweaver.DoCombat(player, target)
         return
     end
 
+    if not toHeal:HasAuraByPlayer(AURA_SOOTHING_MIST_CHANNEL) and HealthLevel < 100 then
+        return
+    end
+        
+
     if HealthLevel < Settings.FixedEnvelop and
         SPELL_ENEVELOPING_MIST:CanCast(toHeal) and
         not toHeal:HasAuraByPlayer(AURA_ENVELOPING_MIST) then
@@ -178,13 +189,8 @@ function Mistweaver.DoCombat(player, target)
         return
     end
 
-    if HealthLevel < Settings.RenewPercent and SPELL_RENEWING_MIST:CanCast(toHeal) and not toHeal:HasAuraByPlayer(AURA_RENEWING_MIST) then
-        SPELL_RENEWING_MIST:Cast(toHeal)
-        return
-    end
-
     -- Begin damage part.
-    if not ShouldAttackSpecial(player, target) or Settings.doDPS ~= 2 then
+    if not ShouldAttackSpecial(player, target) or Settings.doDPS ~= 2 or HealthLevel <= 90 then
         return
     end
 
@@ -311,6 +317,17 @@ function getLowest(player)
     end
 
     return lowest
+end
+
+function getRenewTarget(player)
+    local friendlies = player:GetNearbyFriendlyPlayers(40)
+
+    for i = 1, #friendlies do
+        local tCheck = friendlies[i]
+        if (tCheck:InParty() or tCheck:InRaid()) and not tCheck:HasAuraByPlayer(AURA_RENEWING_MIST) then
+            return tCheck
+        end
+    end
 end
 
 return Mistweaver
