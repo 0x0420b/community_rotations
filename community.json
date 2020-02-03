@@ -1,0 +1,118 @@
+{
+  "name": "Community",
+  "authors": "Community",
+  "scripts": [
+    {
+      "name": "Anti-AFK",
+      "description": "Community bot for anti-afking",
+      "game": "wow",
+      "type": "bot",
+      "main": "antiafk/main.lua"
+    },
+    {
+      "name": "Death Knight",
+      "description": "Community routine for Death Knights",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Death Knight",
+      "main": "deathknight/main.lua"
+    },
+    {
+      "name": "Demon Hunter",
+      "description": "Community routine for Demon Hunters",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Demon Hunter",
+      "main": "demonhunter/main.lua"
+    },
+    {
+      "name": "Druid",
+      "description": "Community routine for Druids",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Druid",
+      "main": "druid/main.lua",
+      "ui": "druid/druid.ui"
+    },
+    {
+      "name": "Fishing",
+      "description": "Community bot for fishing",
+      "game": "wow",
+      "type": "bot",
+      "main": "fishing/main.lua"
+    },
+    {
+      "name": "Hunter",
+      "description": "Community routine for Hunters",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Hunter",
+      "main": "hunter/main.lua"
+    },
+    {
+      "name": "Mage",
+      "description": "Community routine for Mages",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Mage",
+      "main": "mage/main.lua"
+    },
+    {
+      "name": "Monk",
+      "description": "Community routine for Monks",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Monk",
+      "main": "monk/main.lua",
+      "ui": "monk/monk.ui"
+    },
+    {
+      "name": "Paladin",
+      "description": "Community routine for Paladins",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Paladin",
+      "main": "paladin/main.lua"
+    },
+    {
+      "name": "Priest",
+      "description": "Community routine for Priests",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Priest",
+      "main": "priest/main.lua"
+    },
+    {
+      "name": "Rogue",
+      "description": "Community routine for Rogues",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Rogue",
+      "main": "rogue/main.lua"
+    },
+    {
+      "name": "Shaman",
+      "description": "Community routine for Shamans",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Shaman",
+      "main": "shaman/main.lua"
+    },
+    {
+      "name": "Warlock",
+      "description": "Community routine for Warlocks",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Warlock",
+      "main": "warlock/main.lua"
+    },
+    {
+      "name": "Warrior",
+      "description": "Community routine for Warriors",
+      "game": "wow",
+      "type": "routine",
+      "classes": "Warrior",
+      "main": "warrior/main.lua"
+    }
+  ]
+}
