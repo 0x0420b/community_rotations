@@ -1,4 +1,6 @@
 -- New one by Neer
+require('Common.Shared')
+
 local SPELL_VIVIFY = Spell(116670)
 local SPELL_RENEWING_MIST = Spell(115151)
 local SPELL_ESSENCE_FONT = Spell(191837, 100)
@@ -25,10 +27,13 @@ local AURA_SOOTHING_MIST_STATUE = 198533
 local AURA_SOOTHING_MIST_CHANNEL = 115175
 local AURA_LIFE_ENVELOP = 197919
 local AURA_LIFE_VIVIFY = 197916
+local AURA_MONASTERY_TEACHINGS = 202090
 
 local tempVal = 0 -- used to store values for lifecycles.
 local Envelop = false
 local STATUE_ID = 60849
+local onlyDPS = false
+local onlyHEAL = false
 
 -- Global settings. (BOOLEANS (0 = FALSE, 2 = TRUE))
 Settings = {
@@ -54,21 +59,12 @@ Settings = {
 
 local Mistweaver = {}
 
-function Mistweaver.DoCombat(player, target)
-    -- DEBUG PART
-    if Settings.drawDebug == 2 then Debug(player) end
-    -- DEBUG PART
-    local sprop = player:GetCurrentSpell()
-    if player:IsDead() or sprop and sprop == 191837 or -- LETS NOT CANCEL ESSENCE FONT
-    player:IsMounted() or player:IsCasting() or player:HasTerrainSpellActive() or player:HasAura(AURA_FOOD) then
-        return
-    end
-
+function Mistweaver.HealingRotation(player)
     local jadestatue = CheckStatue(player)
-    local findTank = getTank(player)
-    local toHeal = getLowest(player)
+    local findTank = GetTank(player)
+    local toHeal = GetLowest(player)
     local HealthLevel = 0
-    local multiHeal = MultiLow(player)
+    local multiHeal = MultiLow(player, Settings.AoePercent)
     local dispellCheck
     local renewTarget = getRenewTarget(player)
 
@@ -150,7 +146,7 @@ function Mistweaver.DoCombat(player, target)
         return
     end
 
-    if HealthLevel < 100 and
+    if (HealthLevel < Settings.EnvelopPercent or HealthLevel < Settings.VivifyPercent) and
         not toHeal:HasAuraByPlayer(AURA_SOOTHING_MIST_CHANNEL) and
         SPELL_SOOTHING_MIST:CanCast(toHeal) then
         SPELL_SOOTHING_MIST:Cast(toHeal)
@@ -171,7 +167,7 @@ function Mistweaver.DoCombat(player, target)
         return
     end
 
-    if not toHeal:HasAuraByPlayer(AURA_SOOTHING_MIST_CHANNEL) and HealthLevel < 100 then
+    if not toHeal:HasAuraByPlayer(AURA_SOOTHING_MIST_CHANNEL) and (HealthLevel < Settings.EnvelopPercent or HealthLevel < Settings.VivifyPercent) then
         return
     end
         
@@ -194,14 +190,12 @@ function Mistweaver.DoCombat(player, target)
         SPELL_VIVIFY:Cast(toHeal)
         return
     end
+end
 
-    -- Begin damage part.
-    if not ShouldAttackSpecial(player, target) or Settings.doDPS ~= 2 or HealthLevel <= 90 then
-        return
-    end
+function Mistweaver.DamageRotation(player, target)
+    local kickStacks = GetAuraStacks(player, AURA_MONASTERY_TEACHINGS)
 
-    if #player:GetNearbyEnemyUnits(8) > 3 and
-        SPELL_SPINNING_CRANE_KICK:CanCast() then
+    if #player:GetNearbyEnemyUnits(8) > 4 and SPELL_SPINNING_CRANE_KICK:CanCast() and GetCooldownLeft(SPELL_RISING_SUN_KICK) > 1 then
         SPELL_SPINNING_CRANE_KICK:Cast(target)
         return
     end
@@ -211,71 +205,60 @@ function Mistweaver.DoCombat(player, target)
         return
     end
 
-    if SPELL_BLACKOUT_KICK:CanCast(target) then
+    if GetCooldownLeft(SPELL_RISING_SUN_KICK) > 3.2 and kickStacks == 3 and SPELL_BLACKOUT_KICK:CanCast(target) then
         SPELL_BLACKOUT_KICK:Cast(target)
         return
     end
 
-    if SPELL_TIGER_PALM:CanCast(target) then
+    if SPELL_TIGER_PALM:CanCast(target) and GetCooldownLeft(SPELL_RISING_SUN_KICK) > 1.5 then
         SPELL_TIGER_PALM:Cast(target)
         return
     end
 end
 
+function Mistweaver.DoCombat(player, target)
+    local sprop = player:GetCurrentSpell()
+    if player:IsDead() or sprop and sprop == 191837 or -- LETS NOT CANCEL ESSENCE FONT
+    player:IsMounted() or player:IsCasting() or player:HasTerrainSpellActive() or player:HasAura(AURA_FOOD) then
+        return
+    end
+
+    -- Sheeeenanigaans
+    if not onlyDPS then Mistweaver.HealingRotation(player) end
+
+    -- Begin damage part.
+    if not ShouldAttackSpecial(player, target) or Settings.doDPS ~= 2 then
+        return
+    end
+
+    -- Mooore!
+    if not onlyHEAL then Mistweaver.DamageRotation(player, target) end
+end
+
 function findDispell(player)
     local friendly = player:GetNearbyFriendlyPlayers(40)
     for i = 1, #friendly do
+        local magicDebuff = friendly[i]:GetAuras(1, false, 2)[1]
+        local diseaseDebuff = friendly[i]:GetAuras(1, false, 8)[1]
+        local poisonDebuff = friendly[i]:GetAuras(1, false, 16)[1]
+
         if (friendly[i]:InParty() or friendly[i]:InRaid()) and
-            #friendly[i]:GetAuras(1, false, 2) > 0 or
-            #friendly[i]:GetAuras(1, false, 8) > 0 or
-            #friendly[i]:GetAuras(1, false, 16) > 0 then
+            magicDebuff and magicDebuff:GetTimeleft() >= 2000 or
+            diseaseDebuff and diseaseDebuff:GetTimeleft() >= 2000 or
+            poisonDebuff and poisonDebuff:GetTimeleft() >= 2000 then
             return friendly[i]
         end
     end
-    if #player:GetAuras(1, false, 2) > 0 or #player:GetAuras(1, false, 8) > 0 or
-        #player:GetAuras(1, false, 16) > 0 then return player end
-    return nil
-end
 
-function Debug(player)
-    local x = 200
-    local y = 200
-    local s = 0
+    local magicDebuff = player:GetAuras(1, false, 2)[1]
+    local diseaseDebuff = player:GetAuras(1, false, 8)[1]
+    local poisonDebuff = player:GetAuras(1, false, 16)[1]
 
-    if CheckStatue(player) ~= nil then
-        if math.floor(player:GetDistance(CheckStatue(player))) <= 30 then
-            DrawText('Healing Jade Statue is UP - Distance : ' ..
-                         math.floor(player:GetDistance(CheckStatue(player))),
-                     Vec2(400, 130))
-        elseif math.floor(player:GetDistance(CheckStatue(player))) > 30 then
-            DrawText('Healing Jade Statue is OUT OF RANGE!', Vec2(400, 130))
-        end
+    if magicDebuff and magicDebuff:GetTimeleft() >= 2000
+    or diseaseDebuff and diseaseDebuff:GetTimeleft() >= 2000
+    or poisonDebuff and poisonDebuff:GetTimeleft() >= 2000 then
+        return player
     end
-
-    if CheckStatue(player) == nil then
-        DrawText('Healing Jade Statue is DOWN', Vec2(400, 130))
-    end
-
-    for key, value in pairs(Settings) do
-        DrawText("Setting:" .. key .. ' = ' .. value, Vec2(200, 200 + (s * 15)))
-        s = s + 1
-    end
-end
-
-function MultiLow(player)
-    local friendly = player:GetNearbyFriendlyPlayers(30)
-    local lowcount = 0
-    local selfcounted = false
-
-    if player:GetHealthPercent() < 80 then lowcount = lowcount + 1 end
-
-    for i = 1, #friendly do
-        if (friendly[i]:InParty() or friendly[i]:InRaid()) and
-            friendly[i]:GetHealthPercent() < Settings.AoePercent then
-            lowcount = lowcount + 1
-        end
-    end
-    return lowcount
 end
 
 function CheckStatue(player)
@@ -288,43 +271,6 @@ function CheckStatue(player)
     return statue
 end
 
-function getTank(player)
-    local findTank = player:GetNearbyFriendlyPlayers(40)
-    local tank
-
-    for i = 1, #findTank do
-        if (findTank[i]:InParty() or findTank[i]:InRaid()) and findTank[i]:GroupRole() == 1 then 
-            tank = findTank[i] 
-        end
-    end
-
-    return tank
-end
-
-function getLowest(player)
-    local friendlies = player:GetNearbyFriendlyPlayers(40)
-    local lowest
-
-    for i = 1, #friendlies do
-        if not friendlies[i]:IsDead() then
-            if (friendlies[i]:InParty() or friendlies[i]:InRaid()) and not lowest then
-                lowest = friendlies[i]
-            end
-
-            if lowest and (friendlies[i]:InParty() or friendlies[i]:InRaid()) and
-                friendlies[i]:GetHealthPercent() < lowest:GetHealthPercent() then
-                lowest = friendlies[i]
-            end
-        end
-    end
-
-    if lowest and player:GetHealthPercent() < lowest:GetHealthPercent() then
-        lowest = player
-    end
-
-    return lowest
-end
-
 function getRenewTarget(player)
     local friendlies = player:GetNearbyFriendlyPlayers(40)
 
@@ -334,6 +280,40 @@ function getRenewTarget(player)
             return tCheck
         end
     end
+
+    return player
 end
+
+function KeyPress(event, key, modifiers)
+    pressedShift = (modifiers & 1) > 0
+    pressedCtrl = (modifiers & 2) > 0
+	pressedAlt = (modifiers & 4) > 0
+
+    if pressedShift then
+        if not onlyDPS then
+            onlyDPS = true
+            onlyHEAL = false
+        else
+            onlyDPS = false
+        end
+    end
+
+    if pressedCtrl then
+        if not onlyHEAL then
+            onlyHEAL = true
+            onlyDPS = false
+        else
+            onlyHEAL = false
+        end
+    end
+
+    if pressedAlt then
+        onlyDPS = false
+        onlyHEAL = false
+    end
+end
+
+-- Shift to set to only DPS Mode, CTRL To set to only heal mode. Alt to disable all.
+RegisterEvent(4, KeyPress)
 
 return Mistweaver
