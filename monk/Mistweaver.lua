@@ -210,7 +210,7 @@ function Mistweaver.DamageRotation(player, target)
         return
     end
 
-    if SPELL_TIGER_PALM:CanCast(target) and GetCooldownLeft(SPELL_RISING_SUN_KICK) > 1.5 then
+    if SPELL_TIGER_PALM:CanCast(target) and (GetCooldownLeft(SPELL_RISING_SUN_KICK) > 1.5 or kickStacks < 3) then
         SPELL_TIGER_PALM:Cast(target)
         return
     end
