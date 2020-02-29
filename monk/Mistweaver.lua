@@ -19,6 +19,8 @@ local SPELL_THUNDER_FOCUS_TEA = Spell(116680, 100)
 local SPELL_REVIVAL = Spell(115310, 100)
 local SPELL_INVOKE_CHIJI = Spell(198664)
 local SPELL_BLOOD_FURY = Spell(33697)
+local SPELL_CRACKLING_JADE_LIGHTING = Spell(117952)
+local SPELL_TIGERS_LUST = Spell(116841)
 
 local AURA_FOOD = 167152
 local AURA_RENEWING_MIST = 119611
@@ -42,6 +44,7 @@ Settings = {
     LifeCycleRotation = 2,
     FortifyingBrew = 2,
     HealingElixir = 2,
+    BloodFury = 2,
     drawDebug = 0,
     SoothingPercent = 90,
     RenewPercent = 98,
@@ -54,14 +57,15 @@ Settings = {
     RevivalCount = 3,
     ChijiCount = 4,
     FortifyingBrewPercent = 70,
-    HealingElixirPercent = 50
+    HealingElixirPercent = 50,
+    BloodFuryPercent = 55
 }
 
 local Mistweaver = {}
 
 function Mistweaver.HealingRotation(player)
     local jadestatue = CheckStatue(player)
-    local findTank = GetTank(player)
+    local theTank = GetTank(player)
     local toHeal = GetLowest(player)
     local HealthLevel = 0
     local multiHeal = MultiLow(player, Settings.AoePercent)
@@ -116,7 +120,12 @@ function Mistweaver.HealingRotation(player)
         return
     end
 
-    if HealthLevel < 65 and SPELL_BLOOD_FURY:CanCast() then
+    if theTank and theTank:IsRooted() and SPELL_TIGERS_LUST:CanCast(theTank) and HealthLevel > 80 then
+        SPELL_TIGERS_LUST:Cast(theTank)
+        return
+    end
+
+    if Settings.BloodFury == 2 and HealthLevel < Settings.BloodFuryPercent and SPELL_BLOOD_FURY:CanCast() and toHeal:InCombat() and not player:IsCasting() then
         SPELL_BLOOD_FURY:Cast(player)
         return
     end
@@ -153,14 +162,14 @@ function Mistweaver.HealingRotation(player)
         return
     end
 
-    if findTank and findTank:InCombat() and
-        not findTank:HasAura(AURA_SOOTHING_MIST_STATUE) and jadestatue and
-        SPELL_SOOTHING_MIST:CanCast(findTank) and HealthLevel > 85 then
-        SPELL_SOOTHING_MIST:Cast(findTank)
+    if theTank and theTank:InCombat() and
+        not theTank:HasAura(AURA_SOOTHING_MIST_STATUE) and jadestatue and
+        SPELL_SOOTHING_MIST:CanCast(theTank) and HealthLevel > 85 then
+        SPELL_SOOTHING_MIST:Cast(theTank)
         return
     end
 
-    if not findTank and toHeal:InCombat() and
+    if not theTank and toHeal:InCombat() and
         not toHeal:HasAura(AURA_SOOTHING_MIST_STATUE) and jadestatue and
         SPELL_SOOTHING_MIST:CanCast(toHeal) and HealthLevel > 85 then
         SPELL_SOOTHING_MIST:Cast(toHeal)
@@ -195,12 +204,17 @@ end
 function Mistweaver.DamageRotation(player, target)
     local kickStacks = GetAuraStacks(player, AURA_MONASTERY_TEACHINGS)
 
+    if player:GetDistance(target) > 12 and not player:IsMoving() and not player:IsCasting() and SPELL_CRACKLING_JADE_LIGHTING:CanCast(target) then
+        SPELL_CRACKLING_JADE_LIGHTING:Cast(target)
+        return
+    end
+
     if #player:GetNearbyEnemyUnits(8) > 4 and SPELL_SPINNING_CRANE_KICK:CanCast() and GetCooldownLeft(SPELL_RISING_SUN_KICK) > 1 then
         SPELL_SPINNING_CRANE_KICK:Cast(target)
         return
     end
 
-    if SPELL_RISING_SUN_KICK:CanCast(target) then
+    if SPELL_RISING_SUN_KICK:CanCast(target) and #player:GetNearbyEnemyUnits(8) < 6 then
         SPELL_RISING_SUN_KICK:Cast(target)
         return
     end
@@ -217,8 +231,8 @@ function Mistweaver.DamageRotation(player, target)
 end
 
 function Mistweaver.DoCombat(player, target)
-    local sprop = player:GetCurrentSpell()
-    if player:IsDead() or sprop and sprop == 191837 or -- LETS NOT CANCEL ESSENCE FONT
+    local curSpell = player:GetCurrentSpell()
+    if player:IsDead() or curSpell and curSpell:GetSpellId() == 191837 or -- LETS NOT CANCEL ESSENCE FONT
     player:IsMounted() or player:IsCasting() or player:HasTerrainSpellActive() or player:HasAura(AURA_FOOD) then
         return
     end
@@ -276,6 +290,13 @@ function getRenewTarget(player)
 
     for i = 1, #friendlies do
         local tCheck = friendlies[i]
+        if (tCheck:InParty() or tCheck:InRaid()) and not tCheck:HasAuraByPlayer(AURA_RENEWING_MIST) and tCheck:GetHealthPercent() < Settings.RenewPercent then
+            return tCheck
+        end
+    end
+
+    for i = 1, #friendlies do
+        local tCheck = friendlies[i]
         if (tCheck:InParty() or tCheck:InRaid()) and not tCheck:HasAuraByPlayer(AURA_RENEWING_MIST) then
             return tCheck
         end
@@ -284,12 +305,12 @@ function getRenewTarget(player)
     return player
 end
 
-function KeyPress(event, key, modifiers)
+function KeyDown(event, key, modifiers)
     pressedShift = (modifiers & 1) > 0
     pressedCtrl = (modifiers & 2) > 0
 	pressedAlt = (modifiers & 4) > 0
 
-    if pressedShift then
+    if pressedAlt and pressedShift then
         if not onlyDPS then
             onlyDPS = true
             onlyHEAL = false
@@ -298,7 +319,7 @@ function KeyPress(event, key, modifiers)
         end
     end
 
-    if pressedCtrl then
+    if pressedCtrl and pressedAlt then
         if not onlyHEAL then
             onlyHEAL = true
             onlyDPS = false
@@ -307,13 +328,13 @@ function KeyPress(event, key, modifiers)
         end
     end
 
-    if pressedAlt then
+    if pressedAlt and pressedCtrl and pressedShift then
         onlyDPS = false
         onlyHEAL = false
     end
 end
 
 -- Shift to set to only DPS Mode, CTRL To set to only heal mode. Alt to disable all.
-RegisterEvent(4, KeyPress)
+RegisterEvent(4, KeyDown)
 
 return Mistweaver

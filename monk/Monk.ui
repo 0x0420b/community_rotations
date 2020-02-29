@@ -35,7 +35,7 @@
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>2</number>
    </property>
    <property name="elideMode">
     <enum>Qt::ElideNone</enum>
@@ -444,7 +444,7 @@
        <x>10</x>
        <y>164</y>
        <width>161</width>
-       <height>48</height>
+       <height>70</height>
       </rect>
      </property>
      <property name="frameShape">
@@ -459,7 +459,7 @@
         <x>3</x>
         <y>3</y>
         <width>111</width>
-        <height>42</height>
+        <height>65</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -483,6 +483,16 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QCheckBox" name="Settings_BloodFury">
+         <property name="text">
+          <string>Blood Fury</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="verticalLayoutWidget_6">
@@ -491,12 +501,15 @@
         <x>117</x>
         <y>3</y>
         <width>41</width>
-        <height>42</height>
+        <height>64</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_6">
        <property name="spacing">
-        <number>0</number>
+        <number>1</number>
+       </property>
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
        </property>
        <item>
         <widget class="QSpinBox" name="Settings_FortifyingBrewPercent">
@@ -509,6 +522,13 @@
         <widget class="QSpinBox" name="Settings_HealingElixirPercent">
          <property name="value">
           <number>50</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="Settings_BloodFuryPercent">
+         <property name="value">
+          <number>55</number>
          </property>
         </widget>
        </item>
@@ -546,6 +566,32 @@
       <rect>
        <x>10</x>
        <y>-9</y>
+       <width>351</width>
+       <height>161</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Leelawadee UI</family>
+       <pointsize>72</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>SOON™</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="Windwalk">
+    <attribute name="title">
+     <string>Windwalker</string>
+    </attribute>
+    <widget class="QLabel" name="label_27">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>-10</y>
        <width>351</width>
        <height>161</height>
       </rect>
